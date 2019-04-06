@@ -43,6 +43,8 @@ public class MessageSenderManager {
 
     private MessageSenderWindow window;
 
+    private List<Message> history;
+
     public MessageSenderManager(int id, SecretKeySpec AESkey, InetAddress ipAddress, int port, MessageSenderWindow window){
         this.id = id;
         this.AESkey = AESkey;
@@ -197,6 +199,9 @@ public class MessageSenderManager {
                 catch(Exception e){
                     e.printStackTrace();
                 }
+            }
+            else if(conf == 88){
+                //message hist
             }
             else {
                 System.out.println("Wasnt 12345");
