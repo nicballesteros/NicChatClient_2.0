@@ -201,7 +201,7 @@ public class LoginWindow extends JFrame {
 			public void actionPerformed(ActionEvent e) {
 				if(sendDataToLogin()) {
 					dispose();
-					new MessageSenderWindow(login.getID(), login.getAESkey(), login.getAddress(), login.getPort());
+					new MessageSenderWindow(login.getID(), login.getAESkey(), login.getAddress(), login.getPort(), login.getName());
 					login.closeSocket();
 				}
 				else {

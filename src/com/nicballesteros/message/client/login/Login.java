@@ -433,4 +433,8 @@ public class Login {
 		}
 		socket.close();
 	}
+
+	public String getName() {
+		return username;
+	}
 }

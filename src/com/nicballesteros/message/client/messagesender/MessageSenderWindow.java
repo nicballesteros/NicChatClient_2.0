@@ -43,10 +43,10 @@ public class MessageSenderWindow extends JFrame {
 	/**
 	 * Create the frame.
 	 */
-	public MessageSenderWindow(int id, SecretKeySpec AESkey, InetAddress ipAddress, int port) {
+	public MessageSenderWindow(int id, SecretKeySpec AESkey, InetAddress ipAddress, int port, String name) {
 		//TODO when the client closes, set the user to not connected
 
-		manager = new MessageSenderManager(id, AESkey, ipAddress, port, this);
+		manager = new MessageSenderManager(id, AESkey, ipAddress, port, this, name);
 
 		createWindow();
 	}
@@ -85,8 +85,8 @@ public class MessageSenderWindow extends JFrame {
 		gbc_lblNewLabel.gridy = 0;
 		contentPane.add(lblNewLabel, gbc_lblNewLabel);
 
-		lblUser = new JLabel("User");
-		lblUser.setFont(new Font("Tahoma", Font.PLAIN, 15));
+		lblUser = new JLabel(manager.getName());
+		lblUser.setFont(new Font("Tahoma", Font.PLAIN, 30));
 		GridBagConstraints gbc_lblUser = new GridBagConstraints();
 		gbc_lblUser.insets = new Insets(0, 0, 5, 5);
 		gbc_lblUser.gridx = 1;
@@ -216,7 +216,7 @@ public class MessageSenderWindow extends JFrame {
 			txtMessage.requestFocusInWindow();
 		}
 		else {
-			console(msg);//TODO edit this out maybe
+			console(manager.getName() + ": " + msg);
 			manager.sendNewMessage(msg);
 		}
 		txtMessage.setText("");

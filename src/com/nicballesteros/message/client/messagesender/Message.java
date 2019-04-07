@@ -23,8 +23,8 @@ public class Message {
         return to;
     }
 
-    public boolean involves(int firstID, int secondID){
-        if((from == firstID && to == secondID) || (to == firstID && from == secondID)){
+    public boolean contains(int id){
+        if(from == id || to == id){
             return true;
         }
         else{

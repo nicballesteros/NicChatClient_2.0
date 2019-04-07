@@ -45,16 +45,21 @@ public class MessageSenderManager {
 
     private List<Message> history;
 
-    public MessageSenderManager(int id, SecretKeySpec AESkey, InetAddress ipAddress, int port, MessageSenderWindow window){
+    private String name;
+
+    public MessageSenderManager(int id, SecretKeySpec AESkey, InetAddress ipAddress, int port, MessageSenderWindow window, String name){
         this.id = id;
         this.AESkey = AESkey;
         this.ipAddress = ipAddress;
         this.port = port;
+        this.history = new ArrayList<>();
         this.acquaintacesName = new ArrayList<>();
+        this.mapOfHistory = new HashMap<>();
         idAsByte = ByteBuffer.allocate(4).putInt(id).array();
         this.acquaintacesID = new ArrayList<>();
         this.acquaintanceMap = new HashMap<>();
         this.window = window;
+        this.name = name;
         //Booleans
         running = true; //TODO disconnect and set this to false
 
@@ -69,6 +74,7 @@ public class MessageSenderManager {
             e.printStackTrace();
         }
         sendRequestForAcquaintedClients();
+        sendRequestForHistory();
     }
 
     private void receive(){
@@ -156,12 +162,18 @@ public class MessageSenderManager {
                 clientExists = false;
                 System.out.println("Client either already exists or doesn't exist");
             }
-            else if(conf == 11111){
+            else if(conf == 11111){ //a new message has been received
                 ByteArrayOutputStream output = new ByteArrayOutputStream();
                 try{
                     output.write(extraData);
 
-                    window.console(new String(output.toByteArray()));
+                    //save to history
+                    int recipientID = acquaintanceMap.get(recipient);
+                    if(mapOfHistory.containsKey(recipientID)){
+                        mapOfHistory.get(recipientID).add(recipient + ": " + new String(output.toByteArray()));
+                    }
+
+                    window.console(recipient + ": " + new String( output.toByteArray()));
                     System.out.println(new String(output.toByteArray()));
                 }
                 catch(Exception e){
@@ -183,11 +195,16 @@ public class MessageSenderManager {
                             sendNewRecipient(acquaintanceMap.get(recipient));
                             window.selectUser(thisName);
                             window.clearConsole();
+
+                            int recipientID = acquaintanceMap.get(recipient);
+
+                            loadHistoryForUser(recipientID, recipient);
                         }
                         else{
                             requestIfClientExists(thisName);
                             if(doesClientExist()){
-                                System.out.println("hey");
+                                System.out.println("hey"); //TODO select the new acquaintance
+                                //the new name is added in doesClientExist();
                             }
                         }
                     }
@@ -201,7 +218,17 @@ public class MessageSenderManager {
                 }
             }
             else if(conf == 88){
-                //message hist
+                //TODO parse extra data to get the string and the to and from
+                byte[] fromid = Arrays.copyOfRange(extraData, 0, 4);
+                byte[] toid = Arrays.copyOfRange(extraData, 4, 8);
+
+                ByteBuffer fromWrap = ByteBuffer.wrap(fromid);
+                ByteBuffer toWrap = ByteBuffer.wrap(toid);
+
+                extraData = Arrays.copyOfRange(extraData, 8, extraData.length);
+                String message = new String(extraData);
+
+                history.add(new Message(message, fromWrap.getInt(), toWrap.getInt()));
             }
             else {
                 System.out.println("Wasnt 12345");
@@ -325,7 +352,6 @@ public class MessageSenderManager {
         ByteArrayOutputStream output = new ByteArrayOutputStream();
         ByteArrayOutputStream finalOut = new ByteArrayOutputStream();
 
-
         try{
             finalOut.write(AESENCRYPTSIGNAL);
             finalOut.write(idAsByte);
@@ -339,6 +365,12 @@ public class MessageSenderManager {
         }
         catch (Exception e){
             e.printStackTrace();
+        }
+
+        //save to history
+        int recipientID = acquaintanceMap.get(recipient);
+        if(mapOfHistory.containsKey(recipientID)){
+            mapOfHistory.get(recipientID).add(name + ": " + msg);
         }
     }
 
@@ -463,6 +495,8 @@ public class MessageSenderManager {
             recipient = name;
             sendNewRecipient(nameID);
             window.clearConsole();
+
+            loadHistoryForUser(nameID, name);
         }
         else{
             System.out.println("Error in getid");
@@ -474,4 +508,55 @@ public class MessageSenderManager {
         return listModel.indexOf(n);
     }
 
+    private void sendRequestForHistory(){
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        ByteArrayOutputStream finalOut = new ByteArrayOutputStream();
+        try{
+            finalOut.write(AESENCRYPTSIGNAL);
+            finalOut.write(idAsByte);
+
+            output.write(REGISTEREDSIGNAL);
+            output.write((byte)105);
+            output.write((byte)0);
+            finalOut.write(encryptByteAES(output.toByteArray()));
+
+            send(finalOut.toByteArray());
+        }
+        catch (Exception e){
+            e.printStackTrace();
+        }
+    }
+        //could have a request function and just send in 106 or 105
+
+    private HashMap<Integer, List<String>> mapOfHistory;
+
+    private void printHistoryToConsole(List<String> messages){
+        for(String message : messages){
+            window.console(message);
+        }
+    }
+
+    private void loadHistoryForUser(int ID, String usersName){
+        if(!mapOfHistory.containsKey(ID)){ //if the map doesnt have the id in it
+            List<String> temp = new ArrayList<>();
+            for(Message message : history){
+                if(message.contains(ID)){
+                    if(message.getFrom() == this.id){
+                        temp.add(name + ": " + message.getMessage());
+                    }
+                    else{
+                        temp.add(usersName + ": " + message.getMessage());
+                    }
+                    //add to console
+                }
+            }
+            mapOfHistory.put(ID, temp);
+        }
+        //load the data
+        printHistoryToConsole(mapOfHistory.get(ID));
+    }
+
+    public String getName() {
+        return name;
+    }
 }
